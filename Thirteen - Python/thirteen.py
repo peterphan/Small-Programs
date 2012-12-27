@@ -65,6 +65,7 @@ SUIT_VALUE = {
 # Lack of a graphical representation necesitates action options for gameplay
 ACTIONS = {
 		"complete" : "complete turn or pass turn onto the next player",
+		"pass"	   : "passes your turn and puts whatever cards you had to play back in your hand",
 		"sort"     : "sort your hand", 
 		"choose"   : "choose which cards to play",
 		"remove"   : "remove cards from list of cards you've chosen to play",
@@ -233,11 +234,13 @@ def getNumPlayers():
 def getAction():
 	action = raw_input("Enter what you want to do (type 'options' for list of actions available): ")
 	while not action in ACTIONS.keys():
-		action = raw_input("Enter a valid action! ")
+		print "Enter a valid action!"
+		action = raw_input("Enter what you want to do (type 'options' for list of actions available): ")
 	return action
 
 def removeCards(player, cardsToPlay, cardsToBeat):
-	print "Choose a card to remove by entering the card"
+	printPause("Choose a card to remove by entering the card")
+	printPause("enter 'done' when you're finished removing!")
 	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 
 	# create dict for removing cards
@@ -283,7 +286,8 @@ def removeCards(player, cardsToPlay, cardsToBeat):
 		action = None
 
 def chooseCards(player, cardsToPlay, cardsToBeat):
-	print "Choose a card to play by entering the card"
+	printPause("Choose a card to play by entering the card")
+	printPause("enter 'done' when you're finished choosing!")
 	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 	
 	action = None
@@ -320,25 +324,28 @@ def chooseCards(player, cardsToPlay, cardsToBeat):
 		action = None
 
 def doAction(player, action, cardsToPlay, cardsToBeat):
-	if action == "sort":
+	if action == "complete":
+		return False
+	elif action == "sort":
 		player.sortHand(compareCard)
 		print "Here is your newly sorted hand"
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-
-	if action == "choose":
+	elif action == "choose":
 		chooseCards(player, cardsToPlay, cardsToBeat)
-
-	if action == "remove":
+	elif action == "remove":
 		removeCards(player, cardsToPlay, cardsToBeat)
-
-	if action == "options":
+	elif action == "options":
 		print
 		for option, description in ACTIONS.iteritems():
 			print option + " ::: " + description
-
-	if action == "redisplay":
+	elif action == "redisplay":
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-	print
+	elif action == "pass":
+		for card in cardsToPlay:
+			player.addCardToHand(card)
+		cardsToPlay[:] = []
+		return False
+	return True
 
 # assumes hand is valid
 # just needs to compare straight number and of a kind
@@ -370,19 +377,13 @@ def printPause(msg, pause=1):
 	time.sleep(pause)
 
 def performActions(player, cardsToBeat, cardsToPlay):
-	if len(cardsToBeat) == 0:
-		print "You are the current leader of this round!"
-	else:
-		print "You need to beat whatever cards is currently on the table"
-	print "To start putting cards down, type 'choose'"
-	print "Or if you can't beat the current cards, just pass your turn"
-	print "by putting entering 'complete'\n"
+	print "To start putting cards down, type 'choose' and 'complete' to finish your turn"
+	print "Or if you can't beat the current cards, just enter 'pass'\n"
 
 	action = getAction()
 
 	# let user decide all the things to do this turn
-	while action != "complete":
-		doAction(player, action, cardsToPlay, cardsToBeat)
+	while doAction(player, action, cardsToPlay, cardsToBeat):
 		action = getAction()
 
 	validHand = isAValidHand(cardsToPlay)
@@ -484,14 +485,14 @@ def main():
 			if lastPlayerPlayed == playerNum:
 				# reset cards and reset passed
 				printPause("You are the starting this round!\n")
-				cardsToBeat = []
+				cardsToBeat[:] = []
 				for p in players:
 					p.passed = False
 
 			print "It is " + player.name + "'s turn!"
 			printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 			cardsToBeat = performActions(player, cardsToBeat, cardsToPlay)
-			cardsToPlay = []
+			cardsToPlay[:] = []
 
 			if not player.passed:
 				lastPlayerPlayed = playerNum

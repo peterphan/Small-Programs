@@ -33,7 +33,7 @@ var generateRandomValue = function(numArgs, min, max) {
 			if(max > MAX_INT_VALUE) max = MAX_INT_VALUE;
 			return Math.random()*(max-min) + min;
 	}
-}
+};
 
 Math.randomInt = function(min, max) {
 	return Math.floor(generateRandomValue(arguments.length, min, max));
@@ -41,7 +41,7 @@ Math.randomInt = function(min, max) {
 
 Math.randomFloat = function(min, max) {
 	return generateRandomValue(arguments.length, min, max);
-}
+};
 
 /* Bias of 0.5 gives 50% chance of returning true
  * Bias of 0.7 gives 70% chance of returning true
@@ -53,4 +53,4 @@ Math.randomBoolean = function(bias) {
 	} else {
 		return Math.random() >= 0.5;
 	}
-}
+};

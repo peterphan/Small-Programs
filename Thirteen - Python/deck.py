@@ -16,11 +16,12 @@ Each instance of card class has
 	suit: one of ["H", "D", "C", "S"]
 	cardValue: actual character of card (e.g. "J", "2", "8", "A")
 """
-
 NUM_OF_CARDS = 52
 
 class Deck(object):
 	cards = []
+	CARDS = ["3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A", "2"]
+	SUITS = ["S", "C", "D", "H"]
 
 	# initializes a shuffled deck
 	def __init__(self):

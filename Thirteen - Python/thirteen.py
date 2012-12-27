@@ -14,6 +14,7 @@ Todo: Add computer opponent
 from deck import Deck
 from sort import Sort
 import time
+import sys
 
 """
 Class Player
@@ -51,8 +52,6 @@ class Player:
 
 	def cardsLeft(self):
 		return len(self.hand)
-
-PAUSE_TIME = 1
 
 # Hearts > Diamonds > Clubs > Spades
 # and given numerical value to represent them as such
@@ -111,10 +110,16 @@ def printAllRelevantHands(player, cardsToPlay, cardsToBeat):
 	print "Your current hand::", handToStr(player.hand)
 	print
 
-def containsATwo(hand):
-	for card in hand:
-		if card.cardValue == "2":
-			return True
+def containsCard(hand, cardValue, *suit):
+	if not suit:
+		for card in hand:
+			if card.cardValue == cardValue:
+				return True
+	else:
+		suit = suit[0]
+		for card in hand:
+			if card.cardValue == cardValue and card.suit == suit:
+				return True
 	return False
 
 # checks if a hand a player wants to put down is valid
@@ -134,7 +139,7 @@ def isAValidHand(hand):
 			return False
 
 
-	if handType["straight"] > 1 and containsATwo(hand):
+	if handType["straight"] > 1 and containsCard(hand, "2"):
 		# can't include a 2 in straight
 		print "Error: Invalid hand. Can't include a 2 in a straight"
 		print
@@ -240,10 +245,9 @@ def removeCards(player, cardsToPlay, cardsToBeat):
 	for card in cardsToPlay:
 		toPlayDict[card.cardValue+card.suit] = card
 
-	action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
+	action = None
 	while action != "done":
-		while not action in REMOVE_OPTIONS.keys() and not action in toPlayDict.keys():
-			action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
+		action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
 
 		if action == "done": return
 		if action == "sort":
@@ -262,9 +266,18 @@ def removeCards(player, cardsToPlay, cardsToBeat):
 		else:
 			# remove card from to play and add it to hand
 			print "Removing", action, "from cards to play"
-			card = toPlayDict.pop(action, None)
-			player.addCardToHand(card)
-			cardsToPlay.remove(card)
+
+			cards = action.upper()
+			cards = cards.split()
+
+			for key in cards:
+				try:
+					card = toPlayDict.pop(key, None)
+					player.addCardToHand(card)
+					cardsToPlay.remove(card)
+					
+				except ValueError:
+					printPause('Unable to remove "' + key + '" to list of cards to play')
 
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 		action = None
@@ -273,10 +286,10 @@ def chooseCards(player, cardsToPlay, cardsToBeat):
 	print "Choose a card to play by entering the card"
 	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 	
-	action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
+	action = None
+	
 	while action != "done":
-		while not action in CHOOSE_OPTIONS.keys() and not action in player.handDict.keys():
-			action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
+		action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
 
 		if action == "done": return
 		if action == "sort":
@@ -294,7 +307,14 @@ def chooseCards(player, cardsToPlay, cardsToBeat):
 			print
 		else:
 			print "Putting", action, "up for play"
-			cardsToPlay.append(player.playCard(action))
+			cards = action.upper()
+			cards = cards.split()
+
+			for card in cards:
+				try:
+					cardsToPlay.append(player.playCard(card))
+				except ValueError:
+					printPause('Unable to add "' + card + '" to list of cards to play')
 			
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 		action = None
@@ -345,9 +365,9 @@ def handCanBePlayed(cardsToPlay, typeInPlay, cardsToBeat):
 
 	return True
 
-def printPause(msg):
+def printPause(msg, pause=1):
 	print msg
-	time.sleep(PAUSE_TIME)
+	time.sleep(pause)
 
 def performActions(player, cardsToBeat, cardsToPlay):
 	if len(cardsToBeat) == 0:
@@ -356,7 +376,7 @@ def performActions(player, cardsToBeat, cardsToPlay):
 		print "You need to beat whatever cards is currently on the table"
 	print "To start putting cards down, type 'choose'"
 	print "Or if you can't beat the current cards, just pass your turn"
-	print "by putting entering 'complete'"
+	print "by putting entering 'complete'\n"
 
 	action = getAction()
 
@@ -389,7 +409,7 @@ def performActions(player, cardsToBeat, cardsToPlay):
 			return cardsToBeat
 
 		elif not validHand or not handCanBePlayed(cardsToPlay, typeInPlay, cardsToBeat):
-			print "The hand you want to play is not valid!"
+			printPause("The hand you want to play is not valid!")
 			print "You need to have a straight of", typeInPlay["straight"]
 			print "and a 'of a kind' of", typeInPlay["ofAKind"]
 			print "to match the leader"
@@ -407,18 +427,25 @@ def performActions(player, cardsToBeat, cardsToPlay):
 			player.passed = False
 			return list(cardsToPlay)
 
-def main():
+def findPlayerWithLowestCard(players):
+	for card in Deck.CARDS:
+		for suit in Deck.SUITS:
+			for i in xrange(len(players)):
+				if containsCard(players[i].hand, card, suit):
+					return i
+	return 0
 
+def main():
 	introduction()
 
 	numOfPlayers = getNumPlayers()
 	players = []
 
-	for player in range(numOfPlayers):
+	for player in xrange(numOfPlayers):
 		name = raw_input("Enter Player " + str(player + 1) + "'s name: ")
 		players.append(Player(name))
 
-	print "Shuffling and dealing cards..."
+	printPause("Shuffling and dealing cards...")
 	# create deck
 	deck = Deck()
 
@@ -426,10 +453,12 @@ def main():
 	while players[numOfPlayers-1].cardsLeft() != players[numOfPlayers-1].starting_num_of_cards:
 		for player in players:
 			player.addCardToHand(deck.deal())
-	print "Finished dealing!"
+	printPause("Finished dealing!")
 
 	# last player to put down cards
-	lastPlayerPlayed = 0
+	# initialized with player who has lowest card
+	lastPlayerPlayed = findPlayerWithLowestCard(players)
+	minX = lastPlayerPlayed
 	
 	# cards currently on the table to beat
 	cardsToBeat = []
@@ -437,27 +466,29 @@ def main():
 	# cards current player is currently considering to play
 	cardsToPlay = []
 
-	while numOfPlayers > 1:
+	while len(players) > 1:
 
 		# loop through player number instead of using
 		# "for player in plays:
 		# makes code easier to write
-		for playerNum in range(numOfPlayers):
+
+		for playerNum in xrange(minX, len(players)):
 			player = players[playerNum]
 
 			# player skipped his turn so leave him out of the round
 			if player.passed:
+				printPause("You skipped your turn so you can't participate this round")
 				continue
 
 			# check if the last hand played was by this player
 			if lastPlayerPlayed == playerNum:
 				# reset cards and reset passed
+				printPause("You are the starting this round!\n")
 				cardsToBeat = []
-				cardsToPlay = []
 				for p in players:
 					p.passed = False
 
-			print "It is," player.name + "'s turn!"
+			print "It is " + player.name + "'s turn!"
 			printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 			cardsToBeat = performActions(player, cardsToBeat, cardsToPlay)
 			cardsToPlay = []
@@ -471,11 +502,12 @@ def main():
 
 			if not player.playing:
 				players.remove(player)
-				numOfPlayers -= 1
-				print player.name + " is done!"
-				print "Moving on to the next player\n"
+				printPause(player.name + " is done!")
+				printPause("Moving on to the next player\n")
 				break
 
 			printPause("Moving on to the next player\n")
+
+		minX = 0
 
 main()

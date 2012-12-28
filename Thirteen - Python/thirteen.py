@@ -8,7 +8,6 @@ Text-based game
 Multiplayer - not viable unless there's a way for multiple people to connect to a game
 
 Todo: Add computer opponent
-Todo: choppers/auto winsll
 """
 
 # IMPORTS
@@ -26,12 +25,13 @@ Keeps track of the player's hand and provides methods necessary for playing the 
 class Player:
 	starting_num_of_cards = 13
 
-	def __init__(self, name):
+	def __init__(self, name, human):
 		self.hand = []
 		self.handDict = {}
 		self.name = name
 		self.playing = True
 		self.passed = False
+		self.human = human
 
 	# adds a card to the hand
 	def addCardToHand(self, card):
@@ -67,33 +67,12 @@ SUIT_VALUE = {
 ACTIONS = {
 		"complete" : "complete turn or pass turn onto the next player",
 		"pass"	   : "passes your turn and puts whatever cards you had to play back in your hand",
-		"sort"     : "sort your hand", 
-		"choose"   : "choose which cards to play",
-		"remove"   : "remove cards from list of cards you've chosen to play",
 		"redisplay": "redisplay your hand",
 		"options"  : "displays list of options available"
 		}
 
-CHOOSE_OPTIONS = {
-		"done"						: "complete choosing cards to play",
-		"sort"						: "sort your hand", 
-		"remove"					: "remove cards from list of cards you've chosen to play",
-		"options"					: "displays list of options available",
-		"<card value + card suit>"	: "put this card up for play and displays current hand, hand to beat, and hand up for consideration"
-		}
 
-REMOVE_OPTIONS = {
-		"done"						: "complete removing cards",
-		"sort"						: "sort your hand", 
-		"choose"					: "choose cards from list of cards to play",
-		"options"					: "displays list of options available",
-		"<card value + card suit>"	: "put this card up for play and displays current hand, hand to beat, and hand up for consideration"
-		}
-
-"""
-Prints the introduction to the game
-todo: tutorial print
-"""
+# Prints the introduction to the game and an optional how to play
 def introduction():
 	print "Welcome to the game of Thirteen (Tien Len)"
 	tutorial = raw_input("Do you want a tutorial of how to play (enter 'yes' or 'no' without quotes)? ")
@@ -102,7 +81,28 @@ def introduction():
 		tutorial = raw_input("Please enter 'yes' or 'no': ")
 
 	if tutorial == 'yes':
-		# do something
+		print "The goal of Tien Len is to be the first person to get rid of all of your cards"
+		printPause("\n")
+		print "The cards are ranked from 3 to 2"
+		print "2 is the strongest, followed by Ace, King, Queen, Jack and so on with 3 being the weakest"
+		print "The strongest suit is Heart followed by Diamond, Clubs, and Spades"
+		print "The strongest card in the game is a 2 of Hearts and the weakest card is"
+		print "a 3 of Spades"
+		printPause("\n")
+		print "You put down the cards by matching whatever cards is on the table with"
+		print "a better hand"
+		printPause("If someone played a pair of 3s, you need to play a pair with a higher value")
+		printPause("If someone played a straight, you need to play the same number of straight with a higher value")
+		printPause("If you cannot or do not want to match the cards, you can simply pass your turn")
+		print "You do not need to match the cards on the table if you're"
+		print "starting the new round.  In this case, you can put whatever valid hand you want."
+		printPause("\n")
+		printPause("Another special case you can ignore matching the cards is if the cards currently on the table is")
+		print "A single 2 or a pair of Twos"
+		printPause("You can beat a single 2 with Four of a kind or 3 consecutive pairs")
+		printPause("You can beat a pair of 2s with 2 Four of a kind or 4 consecutive pairs")
+		print "These are called choppers"
+		print "This is all you need to know to get started!\n"
 		return 0
 
 def printAllRelevantHands(player, cardsToPlay, cardsToBeat):
@@ -143,14 +143,12 @@ def isAValidHand(hand):
 
 	if handType["straight"] > 1 and containsCard(hand, "2"):
 		# can't include a 2 in straight
-		print "Error: Invalid hand. Can't include a 2 in a straight"
-		print
+		print "Invalid hand. Can't include a 2 in a straight\n"
 		return False
 
 	if handType["straight"] == 2:
 		# need a straight of at least 3
-		print "Error: Straight needs at least 3"
-		print
+		print "Straight needs at least 3\n"
 		return False
 
 	if handType["ofAKind"] > 1:
@@ -161,8 +159,7 @@ def isAValidHand(hand):
 			if currentVal == card.value:
 				currentCount += 1
 			elif currentCount != handType["ofAKind"]:
-				print "Error: Need the same number of a kind for each card"
-				print
+				print "Need the same number of a kind for each card\n"
 				return False
 			else:
 				currentCount = 1
@@ -232,115 +229,26 @@ def getNumPlayers():
 			numOfPlayers = raw_input("Enter a number between 2 and 4: ")
 	return int(numOfPlayers)
 
-def getAction():
-	return raw_input("Enter what you want to do (type 'options' for list of actions available): ")
+def chooseCards(player, cardsToPlay, cardsToBeat, action):
+	print "Putting", action, "up for play"
+	cards = action.upper()
+	cards = cards.split()
 
-def removeCards(player, cardsToPlay, cardsToBeat):
-	printPause("Choose a card to remove by entering the card")
-	printPause("enter 'done' when you're finished removing!")
-	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-
-	# create dict for removing cards
-	toPlayDict = {}
-	for card in cardsToPlay:
-		toPlayDict[card.cardValue+card.suit] = card
-
-	action = None
-	while action != "done":
-		action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
-
-		if action == "done": return
-		if action == "sort":
-			player.sortHand(compareCard)
-			Sort.qsort(cardsToBeat, compareCard)
-			Sort.qsort(cardsToPlay, compareCard)
-			print "Cards sorted"
-		elif action == "choose":
-			chooseCards(player, cardsToPlay, cardsToBeat)
-			return
-		elif action == "options":
-			print
-			for option, description in REMOVE_OPTIONS.iteritems():
-				print option + " ::: " + description
-			print
-		else:
-			# remove card from to play and add it to hand
-			print "Removing", action, "from cards to play"
-
-			cards = action.upper()
-			cards = cards.split()
-
-			for key in cards:
-				try:
-					card = toPlayDict.pop(key, None)
-					player.addCardToHand(card)
-					cardsToPlay.remove(card)
-					
-				except ValueError:
-					printPause('Unable to remove "' + key + '" to list of cards to play')
-
-		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-		action = None
-
-def chooseCards(player, cardsToPlay, cardsToBeat, action = None):
-	while action != "done":
-		if action == None:
-			action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
-
-		if action == "done": return
-		if action == "sort":
-			player.sortHand(compareCard)
-			Sort.qsort(cardsToBeat, compareCard)
-			Sort.qsort(cardsToPlay, compareCard)
-			print "Cards sorted"
-		elif action == "remove":
-			removeCards(player, cardsToPlay, cardsToBeat)
-			return
-		elif action == "options":
-			print
-			for option, description in CHOOSE_OPTIONS.iteritems():
-				print option + " ::: " + description
-			print
-		else:
-			print "Putting", action, "up for play"
-			cards = action.upper()
-			cards = cards.split()
-
-			for card in cards:
-				try:
-					cardsToPlay.append(player.playCard(card))
-				except ValueError:
-					printPause('Unable to add "' + card + '" to list of cards to play')
-			
-		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-		action = None
+	for card in cards:
+		try:
+			cardsToPlay.append(player.playCard(card))
+		except ValueError:
+			printPause('Unable to add "' + card + '" to list of cards to play')
 
 def doAction(player, action, cardsToPlay, cardsToBeat):
-	if action == "complete":
+	if action == "complete" or action == "pass":
 		return False
-	elif action == "sort":
-		player.sortHand(compareCard)
-		print "Here is your newly sorted hand"
-		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-	elif action == "choose":
-		printPause("Choose a card to play by entering the card")
-		printPause("enter 'done' when you're finished choosing!")
-		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-		chooseCards(player, cardsToPlay, cardsToBeat)
-		return False
-	elif action == "remove":
-		removeCards(player, cardsToPlay, cardsToBeat)
 	elif action == "options":
 		print
 		for option, description in ACTIONS.iteritems():
 			print option + " ::: " + description
 	elif action == "redisplay":
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-	elif action == "pass":
-		for card in cardsToPlay:
-			player.addCardToHand(card)
-		cardsToPlay[:] = []
-		return False
 	else:
 		chooseCards(player, cardsToPlay, cardsToBeat, action)
 		return False
@@ -350,6 +258,23 @@ def doAction(player, action, cardsToPlay, cardsToBeat):
 # just needs to compare straight number and of a kind
 def handCanBePlayed(cardsToPlay, typeInPlay, cardsToBeat):
 	typeToPlay = typeOfPlay(cardsToPlay)
+
+	# check if player is chopping a 2
+	if containsCard(cardsToBeat, "2"):
+		if typeInPlay["ofAKind"] == 1:
+			# need 4 of a kind or 3 pairs in a row
+			if typeToPlay["straight"] == 1 and typeToPlay["ofAKind"] == 4:
+				return True
+			if typeToPlay["straight"] == 3 and typeToPlay["ofAKind"] == 2:
+				return True
+		if typeInPlay["ofAKind"] == 2:
+			# need two 4 of a kind or 4 pairs in a row
+			if len(cardsToPlay) == 8:
+				if typeToPlay["ofAKind"] == 4 and typeOfPlay(cardsToPlay[4:])["ofAKind"] == 4:
+					return True
+				if typeToPlay["straight"] == 4 and typeToPlay["ofAKind"] == 2:
+					return True
+
 	if typeToPlay["straight"] != typeInPlay["straight"]:
 		return False
 	if typeToPlay["ofAKind"] != typeInPlay["ofAKind"]:
@@ -362,7 +287,6 @@ def handCanBePlayed(cardsToPlay, typeInPlay, cardsToBeat):
 	if highestInPlayCard.value > highestToPlayCard.value:
 		printPause("Need a higher card value to beat the cards in play\n")
 		print
-		time.sleep(PAUSE_TIME)
 		return False
 	if highestInPlayCard.value == highestToPlayCard.value:
 		if SUIT_VALUE[highestInPlayCard.suit] > SUIT_VALUE[highestToPlayCard.suit]:
@@ -371,20 +295,28 @@ def handCanBePlayed(cardsToPlay, typeInPlay, cardsToBeat):
 
 	return True
 
+# prints a message and pauses the program afterward
 def printPause(msg, pause=1):
 	print msg
 	time.sleep(pause)
 
 def performActions(player, cardsToBeat, cardsToPlay):
+	# reset cardsToPlay from previous player
+	for card in cardsToPlay:
+		player.addCardToHand(card)
+	cardsToPlay[:] = []
+	Sort.qsort(player.hand, compareCard)
+
 	print "To start putting cards down, type 'choose' and 'complete' to finish your turn"
 	print "Or if you can't beat the current cards, just enter 'pass'\n"
-
-	action = getAction()
+	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
+	action = raw_input("Enter what you want to do (type 'options' for list of actions available): ")
 
 	# let user decide all the things to do this turn
 	while doAction(player, action, cardsToPlay, cardsToBeat):
-		action = getAction()
+		action = raw_input("Enter what you want to do (type 'options' for list of actions available): ")
 
+	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 	validHand = isAValidHand(cardsToPlay)
 
 	# no cards currently on the table
@@ -397,7 +329,6 @@ def performActions(player, cardsToBeat, cardsToPlay):
 			return performActions(player, cardsToBeat, cardsToPlay)
 		else:
 			# set current hand on table
-			printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 			return list(cardsToPlay)
 
 	else:
@@ -411,22 +342,17 @@ def performActions(player, cardsToBeat, cardsToPlay):
 		elif not validHand or not handCanBePlayed(cardsToPlay, typeInPlay, cardsToBeat):
 			printPause("The hand you want to play is not valid!")
 			print "You need to have a straight of", typeInPlay["straight"]
-			print "and a 'of a kind' of", typeInPlay["ofAKind"]
+			print "and a \"of a kind\" of", typeInPlay["ofAKind"]
 			print "to match the leader"
-			printPause("")
-			print "Choose or remove some cards to match the current leader."
-			print "The leader's hand is:", handToStr(cardsToBeat)
-			print "Your current hand is:", handToStr(cardsToPlay)
-			print "You have these cards to choose from:", handToStr(player.hand)
 			printPause("")
 			return performActions(player, cardsToBeat, cardsToPlay)
 
 		else:
 			# set current hand on table
-			printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 			player.passed = False
 			return list(cardsToPlay)
 
+# used to determine who should start first
 def findPlayerWithLowestCard(players):
 	for card in Deck.CARDS:
 		for suit in Deck.SUITS:
@@ -443,22 +369,12 @@ def main():
 
 	for player in xrange(numOfPlayers):
 		name = raw_input("Enter Player " + str(player + 1) + "'s name: ")
-		players.append(Player(name))
-
-	printPause("Shuffling and dealing cards...")
-	# create deck
-	deck = Deck()
-
-	# while not everyone has been dealt 13 cards
-	while players[numOfPlayers-1].cardsLeft() != players[numOfPlayers-1].starting_num_of_cards:
-		for player in players:
-			player.addCardToHand(deck.deal())
-	printPause("Finished dealing!")
+		players.append(Player(name, True))
 
 	# last player to put down cards
 	# initialized with player who has lowest card
-	lastPlayerPlayed = findPlayerWithLowestCard(players)
-	minX = lastPlayerPlayed
+	playerToStart = -1
+	lastPlayerPlayed = -1
 	
 	# cards currently on the table to beat
 	cardsToBeat = []
@@ -466,48 +382,81 @@ def main():
 	# cards current player is currently considering to play
 	cardsToPlay = []
 
-	while len(players) > 1:
+	while True:
+		numPlayers = numOfPlayers
+		printPause("Shuffling and dealing cards...")
+		# create deck
+		deck = Deck()
 
-		# loop through player number instead of using
-		# "for player in plays:
-		# makes code easier to write
+		# while not everyone has been dealt 13 cards
+		while players[numOfPlayers-1].cardsLeft() != players[numOfPlayers-1].starting_num_of_cards:
+			for player in players:
+				player.addCardToHand(deck.deal())
+		printPause("Finished dealing!")
 
-		for playerNum in xrange(minX, len(players)):
-			player = players[playerNum]
+		# find out who starts hte round
+		printPause("Finding out who should start the round...")
+		if playerToStart == -1:
+			playerToStart = findPlayerWithLowestCard(players)
+		lastPlayerPlayed = playerToStart
+		playerToStart = -1
+		minX = lastPlayerPlayed
 
-			# player skipped his turn so leave him out of the round
-			if player.passed:
-				printPause("You skipped your turn so you can't participate this round")
-				continue
+		while numPlayers > 1:
 
-			# check if the last hand played was by this player
-			if lastPlayerPlayed == playerNum:
-				# reset cards and reset passed
-				printPause("You are the starting this round!\n")
-				cardsToBeat[:] = []
-				for p in players:
-					p.passed = False
+			# loop through player number instead of using
+			# "for player in plays:
+			# makes code easier to write
 
-			print "It is " + player.name + "'s turn!"
-			printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-			cardsToBeat = performActions(player, cardsToBeat, cardsToPlay)
-			cardsToPlay[:] = []
+			for playerNum in xrange(minX, len(players)):
+				player = players[playerNum]
+				if not player.playing:
 
-			if not player.passed:
-				lastPlayerPlayed = playerNum
+					# let someone else be the leader
+					if lastPlayerPlayed == playerNum:
+						for player in players:
+							player.passed = False
+						lastPlayerPlayed += 1
+						if lastPlayerPlayed == len(players):
+							lastPlayerPlayed = 0
+					continue
 
-			# signal that the player is done playing
-			if len(player.hand) == 0:
-				player.playing = False
+				# player skipped his turn so leave him out of the round
+				if player.passed:
+					printPause(player.name + " skipped his/her turn so he/she can't participate this round")
+					continue
 
-			if not player.playing:
-				players.remove(player)
-				printPause(player.name + " is done!")
+				# check if the last hand played was by this player
+				if lastPlayerPlayed == playerNum:
+					# reset cards and reset passed
+					printPause(player.name + " is starting this round!\n")
+					cardsToBeat[:] = []
+					for p in players:
+						p.passed = False
+
+				print "It is " + player.name + "'s turn!"
+				cardsToBeat = performActions(player, cardsToBeat, cardsToPlay)
+				cardsToPlay[:] = []
+
+				if not player.passed:
+					lastPlayerPlayed = playerNum
+
+				# signal that the player is done playing
+				if len(player.hand) == 0:
+					numPlayers -= 1
+					if numPlayers == 1:
+						printPause("Game is over!")
+						printPause("Starting a new game...")
+						break;
+					player.playing = False
+					printPause(player.name + " is done!")
+
+					# this is the first person to finish, let him start the next game
+					if playerToStart == -1:
+						playerToStart = playerNum
+
 				printPause("Moving on to the next player\n")
-				break
 
-			printPause("Moving on to the next player\n")
-
-		minX = 0
+			minX = 0
 
 main()

@@ -8,6 +8,7 @@ Text-based game
 Multiplayer - not viable unless there's a way for multiple people to connect to a game
 
 Todo: Add computer opponent
+Todo: choppers/auto winsll
 """
 
 # IMPORTS
@@ -232,11 +233,7 @@ def getNumPlayers():
 	return int(numOfPlayers)
 
 def getAction():
-	action = raw_input("Enter what you want to do (type 'options' for list of actions available): ")
-	while not action in ACTIONS.keys():
-		print "Enter a valid action!"
-		action = raw_input("Enter what you want to do (type 'options' for list of actions available): ")
-	return action
+	return raw_input("Enter what you want to do (type 'options' for list of actions available): ")
 
 def removeCards(player, cardsToPlay, cardsToBeat):
 	printPause("Choose a card to remove by entering the card")
@@ -285,15 +282,10 @@ def removeCards(player, cardsToPlay, cardsToBeat):
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 		action = None
 
-def chooseCards(player, cardsToPlay, cardsToBeat):
-	printPause("Choose a card to play by entering the card")
-	printPause("enter 'done' when you're finished choosing!")
-	printAllRelevantHands(player, cardsToPlay, cardsToBeat)
-	
-	action = None
-	
+def chooseCards(player, cardsToPlay, cardsToBeat, action = None):
 	while action != "done":
-		action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
+		if action == None:
+			action = raw_input("What card or option do you want to take (enter 'options' for a list of options)? ")
 
 		if action == "done": return
 		if action == "sort":
@@ -331,7 +323,11 @@ def doAction(player, action, cardsToPlay, cardsToBeat):
 		print "Here is your newly sorted hand"
 		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 	elif action == "choose":
+		printPause("Choose a card to play by entering the card")
+		printPause("enter 'done' when you're finished choosing!")
+		printAllRelevantHands(player, cardsToPlay, cardsToBeat)
 		chooseCards(player, cardsToPlay, cardsToBeat)
+		return False
 	elif action == "remove":
 		removeCards(player, cardsToPlay, cardsToBeat)
 	elif action == "options":
@@ -344,6 +340,9 @@ def doAction(player, action, cardsToPlay, cardsToBeat):
 		for card in cardsToPlay:
 			player.addCardToHand(card)
 		cardsToPlay[:] = []
+		return False
+	else:
+		chooseCards(player, cardsToPlay, cardsToBeat, action)
 		return False
 	return True
 

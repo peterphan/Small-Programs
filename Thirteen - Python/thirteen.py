@@ -132,6 +132,20 @@ def isAValidHand(hand):
 		return True
 	handType = typeOfPlay(hand)
 
+	if handType["ofAKind"] > 1:
+		# check if each card in the hand has the same "of a kind" count for each card
+		currentVal = hand[0].value
+		currentCount = 0
+		for card in hand:
+			if currentVal == card.value:
+				currentCount += 1
+			elif currentCount != handType["ofAKind"]:
+				print "Need the same number of a kind for each card\n"
+				return False
+			else:
+				currentCount = 1
+				currentVal = card.value
+
 	# check for breaks in straight
 	currValue = hand[0].value
 	for card in hand:
@@ -151,19 +165,6 @@ def isAValidHand(hand):
 		print "Straight needs at least 3\n"
 		return False
 
-	if handType["ofAKind"] > 1:
-		# check if each card in the hand has the same "of a kind" count for each card
-		currentVal = hand[0].value
-		currentCount = 0
-		for card in hand:
-			if currentVal == card.value:
-				currentCount += 1
-			elif currentCount != handType["ofAKind"]:
-				print "Need the same number of a kind for each card\n"
-				return False
-			else:
-				currentCount = 1
-				currentVal = card.value
 	return True
 
 # checks how many straight the hand is
